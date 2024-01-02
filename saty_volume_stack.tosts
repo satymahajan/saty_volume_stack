@@ -1,0 +1,42 @@
+# Saty_Volume_Stack
+# Copyright (C) 2022-2024 Saty Mahajan
+#
+# This study contains 3 useful features:
+# 1. "Buy/Sell" Volume is separated by utilizing the candle OHLC to determine a proxy ratio.
+# 2. "Winning" Volume is always stacked on top giving you a clear visual indication of the candle winner and by how much.
+# 3. Current candle volume ratio label with the winner always on the left side providing a fast visual indication.
+
+declare lower;
+
+# Proxy buyer/seller volume by using % of candle "won" by each side
+def buy_volume = volume * (close - low) / (high - low);
+def sell_volume = volume * (high - close) / (high - low);
+def buyers_winning = buy_volume >= sell_volume;
+
+# Smaller Volume (lower bar)
+plot SmallerVolume = if buyers_winning then sell_volume else buy_volume;
+SmallerVolume.setPaintingStrategy(PaintingStrategy.Histogram);
+SmallerVolume.HideBubble();
+SmallerVolume.HideTitle();
+SmallerVolume.SetLineWeight(1);
+SmallerVolume.AssignValueColor(
+if buyers_winning then Color.RED
+else Color.GREEN);
+
+# Bigger Volume (higher bar)
+plot BiggerVolume = volume;
+BiggerVolume.setPaintingStrategy(PaintingStrategy.Histogram);
+BiggerVolume.HideBubble();
+BiggerVolume.SetLineWeight(1);
+BiggerVolume.AssignValueColor(
+if buyers_winning then Color.GREEN 
+else Color.RED);
+
+# Rotating Volume Bias Labels
+def buy_percent = Round((buy_volume / volume) * 100, 1);
+def sell_percent = Round((sell_volume / volume) * 100, 1);
+def buy_larger = buy_percent >= sell_percent;
+def larger_percentage = if buy_larger then buy_percent else sell_percent;
+def smaller_percentage = if buy_larger then sell_percent else buy_percent;
+AddLabel(yes, larger_percentage + "% ", if buy_larger then Color.GREEN else Color.RED);
+AddLabel(yes, smaller_percentage + "% ", if buy_larger then Color.RED else Color.GREEN);
