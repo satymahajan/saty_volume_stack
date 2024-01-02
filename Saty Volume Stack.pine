@@ -1,0 +1,49 @@
+// Saty Volume Stack
+// Copyright (C) 2022-2024 Saty Mahajan
+//
+// This study contains 3 useful features:
+// 1. Buy/Sell Volume is separated by utilizing the candle OHLC to determine a proxy ratio.
+// 2. "Winning" Volume is always stacked on top giving you a clear visual indication of the candle winner and by how much.
+// 3. Current candle volume ratio is shown in a table, with the winner always staying on the left side providing a fast visual indication.
+
+//@version=5
+indicator("Saty Volume Stack")
+
+// Proxy buyer/seller volume by using % of candle "won" by each side
+buy_volume = volume * (close - low) / (high - low)
+sell_volume = volume * (high - close) / (high - low)
+buyers_winning = true
+if buy_volume < sell_volume
+    buyers_winning := false
+
+// Bigger Volume (higher bar)
+bigger_volume_color = buyers_winning == true ? color.green : color.red
+bigger_volume = volume
+BiggerVolume = plot(bigger_volume, style = plot.style_columns, color = bigger_volume_color)
+
+// Smaller Volume (lower bar)
+smaller_volume_color = buyers_winning == true ? color.red : color.green
+smaller_volume = sell_volume
+if buyers_winning == false
+    smaller_volume := buy_volume
+SmallerVolume = plot(smaller_volume, style = plot.style_columns, color = smaller_volume_color)
+
+// Rotating Volume Bias Labels
+buy_percent = (buy_volume / volume) * 100
+sell_percent = (sell_volume / volume) * 100
+buy_larger = true
+larger_percent = buy_percent
+smaller_percent = sell_percent
+larger_percent_color = color.green
+smaller_percent_color = color.red
+if buy_percent < sell_percent
+    buy_larger := false
+    larger_percent := sell_percent
+    smaller_percent := buy_percent
+    larger_percent_color := color.red
+    smaller_percent_color := color.green
+var tbl = table.new(position.top_right, 3, 1)
+if barstate.islast
+    table.cell(tbl, 0, 0, 'Saty Volume Stack', bgcolor=color.black, text_color=color.white)
+    table.cell(tbl, 1, 0, str.tostring(larger_percent, '#.#') + '%', bgcolor=larger_percent_color)
+    table.cell(tbl, 2, 0, str.tostring(smaller_percent, '#.#') + '%', bgcolor=smaller_percent_color)
